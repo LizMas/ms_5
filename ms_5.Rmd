@@ -3,13 +3,16 @@ title: "Milestone 5"
 author: "Liz Masten"
 date: "3/29/2020"
 output: bookdown::pdf_document2
-bibliography: bib.bib
+bibliography: bib2.bib
+biblio-style: apalike 
 link_citations: TRUE
 ---
 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+
+knitr::write_bib(c("knitr", "stringr"), "bib2.bib", width = 60)
 
 library(foreign)
 library(tinytex)
@@ -84,15 +87,15 @@ stargazer(model_x, header=FALSE, type='latex')
 ```
 
 
-```{r}
+# References {-}
 
-#Google Scholar has a citation feature where you can export the citation as a BibTeX 
-#...which didn't actually save it as a .bib file, but rather as .txt, so that seems promising but didn't work for me this time. 
+```{r generated bibliography, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 
-#So I looked online and found a paper by Jenny Bryant that saved as a .bib 
-
-
-
+cleanbib()
+options("citation_format" = "pandoc")
+read.bibtex(file = "bib2.bib")
+read.bibtex(file = "article.bib")
+ 
 ```
-
+# Appendix {-}
 
