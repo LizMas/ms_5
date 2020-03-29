@@ -1,0 +1,124 @@
+---
+title: "ms_5"
+author: "Liz Masten"
+date: "3/29/2020"
+output: bookdown::pdf_document2
+bibliography: bib.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(foreign)
+library(tinytex)
+library(gt)
+library(bookdown)
+library(stargazer)
+library(bibtex)
+library(yaml)
+library(knitcitations)
+library(tidyverse)
+```
+
+```{r}
+
+#Here is the cleaned data, available in GitHub repo. 
+
+data <- read.dta("fpy_replication_data_jop_2012.dta")
+
+```
+
+```{r}
+
+#table using gt package 
+
+table <- data %>% 
+  #filter to after 1990 because the table was too big otherwise and I'd never actually do a table like that anyway 
+  filter(year >= 1990) %>% 
+  select(year, terrorCounts) %>% 
+  group_by(year) %>% 
+  summarise(events = sum(terrorCounts))
+
+
+gt_table <- gt(table) %>% 
+            tab_header(title = "Terror Attacks per Year")
+
+gt_table
+
+```
+
+
+```{r}
+
+#prep a quick regression for stargazer table example 
+
+x <- data %>% 
+  select(year, terrorCounts, rivalry) %>% 
+  group_by(year) %>% 
+  drop_na()
+
+model_x <- glm(rivalry ~ terrorCounts, data = x)
+
+```
+
+```{r, results='asis'}
+
+#To get stargazer to work with a pdf output, I had to put results = 'asis' in the code chunk. 
+
+#Using the normal output method I used in the past gave me a gross looking table, so I changed it to header = FALSE and type = 'latex' to make it compatable with the pdf output, I suppose. 
+
+stargazer(model_x, header=FALSE, type='latex')
+
+```
+
+
+```{r}
+
+#Google Scholar has a citation feature where you can export the citation as a BibTeX 
+#...which didn't actually save it as a .bib file, but rather as .txt, so that seems promising but didn't work for me this time. 
+
+#So I looked online and found a paper by Jenny Bryant that saved as a .bib 
+
+
+
+```
+
+
+Here is an example of how to footnote.^[This is the text of footnote 1] 
+And another one.^[This is the text of footnote 2]
+
+Here is some text that I want to cite in the bibliography [see @bib.bib]
+
+# References
+
+```{r generateBibliography, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+
+cleanbib()
+options("citation_format" = "pandoc")
+read.bibtex(file = "bib.bib")
+
+#ok so this isn't a great working example but the idea is here. 
+```
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
