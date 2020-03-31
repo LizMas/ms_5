@@ -22,6 +22,7 @@ library(stargazer)
 library(bibtex)
 library(yaml)
 library(knitcitations)
+library(magick)
 library(tidyverse)
 ```
 
@@ -38,54 +39,38 @@ data <- read.dta("fpy_replication_data_jop_2012.dta")
 ```
 I am planning to replicate a paper by Michael Findley, James Piazza, and Joseph Young titled "Games Rivals Play: Terrorism in International Rivalries," appearing in The Journal of Politics, Vol. 74, No. 1, January 2012, Pp. 235-248. This paper analyzes transnational terrorism as a component of interstate rivalries, specifically focusing on the use of terrorism in proxy warfighting. 
 
-Games Rival’s Play: Terrorism in International Rivalries Michael Findley, James Piazza, and Joseph Young argue in their paper Games Rivals Play: Terrorism in International Rivalries that interstate rivalries are a positive predictor of transnational terrorist activity. In other words, terrorist attacks are more likely to occur in the context of a rivalry between two states than in the absence of such a rivalry. They empirically test their hypothesis by analyzing “politically relevant directed state dyads,” meaning that they focus on country-level factors in states that sponsor terrorism as well as target states, while ignoring the states that are unlikely to interact at all in the international system. This use of politically relevant dyads allows the authors to incorporate covariates (rivalry, joint democracy, contiguity, and capability ratio) as controls, as well as practice good statistical practices by discounting irrelevant dyads that would increase the number of observations, thus increasing the likelihood of spurious statistical significance.^[All analysis for this paper is available in my GitHub: https://github.com/LizMas/ms_5]
+Their main argument is that interstate rivalries are a positive predictor of transnational terrorist activity. In other words, terrorist attacks are more likely to occur in the context of a rivalry between two states than in the absence of such a rivalry. They empirically test their hypothesis by analyzing “politically relevant directed state dyads,” meaning that they focus on country-level factors in states that sponsor terrorism as well as target states, while ignoring the states that are unlikely to interact at all in the international system. This use of politically relevant dyads allows the authors to incorporate covariates (rivalry, joint democracy, contiguity, and capability ratio) as controls, as well as practice good statistical practices by discounting irrelevant dyads that would increase the number of observations, thus increasing the likelihood of spurious statistical significance.^[All analysis for this paper is available in my GitHub: https://github.com/LizMas/ms_5]
 
 My thanks go to Professor Erica Chennoweth for suggesting this paper.
 
 
 ```{r}
 
-#table using gt package 
+# 2) A beautiful graphic which uses this data: 
 
-table <- data %>% 
-  #filter to after 1990 because the table was too big otherwise and I'd never actually do a table like that anyway 
-  filter(year >= 1990) %>% 
-  select(year, terrorCounts) %>% 
+options(scipen = 999)
+
+graphic_1 <- data %>% 
   group_by(year) %>% 
-  summarise(events = sum(terrorCounts))
+  mutate(events = sum(terrorCounts))  
 
+plot <- ggplot(graphic_1, aes(x = year, y = events, group = rivalry, color = rivalry, fill= rivalry)) +
+  geom_col() +
+  labs(title = "Terrorism Events and Interstate Rivalry", 
+      subtitle = "Terrorist attacks occur more frequently in the presence of an interstate rivalry", 
+      caption = "Source: Games Rivals Play, Findley et al") +
+  xlab("Year") +
+  ylab("Number of Events") +
+  labs(fill = "Presence of Interstate Rivalry", color = "Presence of Interstate Rivalry") +
+    guides(fill = guide_legend(override.aes = list(color = NA)), 
+         color = FALSE, 
+         shape = FALSE)+
+          scale_fill_continuous(limits = c(0,1), breaks = c(0, 1), labels = c("Rivalry", "No Rivalry"))
 
-gt_table <- gt(table) %>% 
-            tab_header(title = "Terror Attacks per Year")
+plot
 
-gt_table
 
 ```
-
-
-```{r}
-
-#prep a quick regression for stargazer table example 
-
-x <- data %>% 
-  select(year, terrorCounts, rivalry) %>% 
-  group_by(year) %>% 
-  drop_na()
-
-model_x <- glm(rivalry ~ terrorCounts, data = x)
-
-```
-
-```{r, results='asis'}
-
-#To get stargazer to work with a pdf output, I had to put results = 'asis' in the code chunk. 
-
-#Using the normal output method I used in the past gave me a gross looking table, so I changed it to header = FALSE and type = 'latex' to make it compatable with the pdf output, I suppose. 
-
-stargazer(model_x, header=FALSE, type='latex')
-
-```
-
 
 # References {-}
 
@@ -100,4 +85,43 @@ read.bibtex(file = "article.bib")
  
 ```
 # Appendix {-}
+
+```{r, results='asis'}
+
+#results = 'asis' to render stargazer table in pdf 
+
+#recreate Table 1, Models 1 - 4
+
+#Model 1: STATA: 'nbreg terrorCounts rivalry jointDem1 logcapratio contiguity, nolog cluster(dyadid) dispersion(constant)' 
+
+#The authors did a negative binomial regression in STATA, but I did a Poisson here because apparently a negtive binomial regression is just a type of Poisson, but Poisson is more generalized. 
+
+model_1 <- glm(data = data, terrorCounts ~ rivalry + jointDem1 + logcapratio + contiguity, family = poisson)
+
+# STATA: 'nbreg terrorCounts2 rivalry jointDem1 logcapratio contiguity, nolog cluster(dyadid)  dispersion(constant)'  
+
+model_2 <- glm(data = data, terrorCounts2 ~ rivalry + jointDem1 + logcapratio + contiguity, family = poisson)
+
+# STATA: 'nbreg terrorCounts rivalry jointDem1 logcapratio historyl1 historyl2 coldwar1 conflict1 conflict2 contiguity war1 war2, nolog cluster(dyadid) dispersion(constant)' 
+
+model_3 <- glm(data = data, terrorCounts ~ rivalry + jointDem1 + logcapratio + historyl1 + coldwar1 + conflict1 + conflict2 + contiguity + war1 + war2, family = poisson)
+
+#STATA: 'nbreg terrorCounts2 rivalry jointDem1 logcapratio historyl1 historyl2 coldwar1 conflict1 conflict2 contiguity war1 war2, nolog cluster(dyadid)  dispersion(constant)' 
+
+model_4 <- glm(data = data, terrorCounts2 ~ rivalry + jointDem1 + logcapratio + historyl1 + historyl2 + coldwar1 + conflict1 + conflict2 + contiguity + war1 + war2, family = poisson)
+
+stargazer::stargazer(model_1, model_2, model_3, model_4, 
+                    type= 'latex',
+                    title = "Reproduction Attempt at Poisson Models of Transnational Terrorist Activity per Findley et al")
+  
+```
+
+
+```{r}
+
+img <- magick::image_read('rep_table.png')
+print(img)
+
+```
+
 
