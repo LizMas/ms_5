@@ -95,6 +95,8 @@ cleanbib()
 options("citation_format" = "pandoc")
 read.bibtex(file = "bib2.bib")
 read.bibtex(file = "article.bib")
+
+#This is still a mess, but I can't for the life of me get the # off. Also, there has to be a better way to 1) not get the bib.bib/ bib2.bib file to overwrite with the default nonsense that R does and 2) combine the .bib files so I don't have to call individual files like article.bib. This was my work around for now... 
  
 ```
 # Appendix {-}
